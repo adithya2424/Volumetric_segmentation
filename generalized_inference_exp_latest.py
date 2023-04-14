@@ -477,6 +477,7 @@ def main():
         case_l = 4
         left_lung_pad = np.zeros((diff_main_x, diff_main_y, final_left_lung.shape[2]))
         left_lung = total_lung[min_x1:diff_x, min_y1:diff_y, 0:max_z1]
+        left_lung_buffer = total_lung[min_x1:diff_x, min_y1:diff_y, 0:max_z1]
         # left_lung = np.concatenate((left_lung_buffer, left_lung_pad), axis=(0, 1))
 
     # steps to pad left side of left lung
@@ -487,8 +488,8 @@ def main():
     left_pad = np.zeros((left_lung.shape[0], left_lung.shape[1], diff_z))
     # obtain padded left lung across z dimension
     left_lung = np.concatenate((left_pad, left_lung), axis=2)
-    multiple_clip_overlay_with_mask_from_npy(left_lung, np.zeros_like(left_lung), "leftpad1.png",
-                                             clip_plane="coronal", img_vrange=(-1000, 0))
+    # multiple_clip_overlay_with_mask_from_npy(left_lung, np.zeros_like(left_lung), "leftpad1.png",
+    #                                          clip_plane="coronal", img_vrange=(-1000, 0))
 
     # process right lung padding
     x_pad_2 = padding(max_x2 - min_x2, 96)
@@ -534,8 +535,8 @@ def main():
     right_pad = np.zeros((right_lung.shape[0], right_lung.shape[1], diff_z_2))
     right_lung = np.concatenate((right_lung, right_pad), axis=2)
 
-    multiple_clip_overlay_with_mask_from_npy(right_lung, np.zeros_like(right_lung), "rightpad1.png",
-                                             clip_plane="coronal", img_vrange=(-1000, 0))
+    # multiple_clip_overlay_with_mask_from_npy(right_lung, np.zeros_like(right_lung), "rightpad1.png",
+    #                                          clip_plane="coronal", img_vrange=(-1000, 0))
 
     # convert final lung one to ras
     final_lung_one_ras = np.transpose(left_lung)
@@ -641,18 +642,49 @@ def main():
     final_labels_spl_2 = np.flip(final_labels, axis=1)
     final_labels_spl_2 = np.flip(final_labels_spl_2, axis=0)
     final_labels_spl_2 = np.transpose(final_labels_spl_2)
-
     total_labels = np.zeros_like(total_lung)
+    # remove left pad
+    final_labels_spl_1_ = final_labels_spl_1[:, :, diff_z:]
+    if case_l == 1:
+        total_labels[min_x1:, min_y1:, 0:max_z1] = final_labels_spl_1_[0:left_lung_buffer.shape[0], 0:left_lung_buffer.shape[1], 0:left_lung_buffer.shape[2]]
+    elif case_l == 2:
+        total_labels[min_x1:, min_y1:diff_y, 0:max_z1] = final_labels_spl_1_[0:left_lung_buffer.shape[0], 0:left_lung_buffer.shape[1], 0:left_lung_buffer.shape[2]]
+    elif case_l == 3:
+        total_labels[min_x1:diff_x, min_y1:, 0:max_z1] = final_labels_spl_1_[0:left_lung_buffer.shape[0], 0:left_lung_buffer.shape[1], 0:left_lung_buffer.shape[2]]
+    elif case_l == 4:
+        total_labels[min_x1:diff_x, min_y1:diff_y, 0:max_z1] = final_labels_spl_1_[0:left_lung_buffer.shape[0], 0:left_lung_buffer.shape[1], 0:left_lung_buffer.shape[2]]
 
-    total_left = final_labels_spl_1[0:max_x1, 0:max_y1, 0:max_z1]
 
-    multiple_clip_overlay_with_mask_from_npy(total_lung, total_left, "leftTlung.png",
+    final_labels_spl_2_ = final_labels_spl_2[:, :, :-diff_z_2]
+    if case_r == 1:
+        total_labels[min_x2:, min_y2:, max_z1:] = final_labels_spl_2_[0:right_lung_buffer.shape[0], 0:right_lung_buffer.shape[1], 0:right_lung_buffer.shape[2]]
+    elif case_r == 2:
+        total_labels[min_x2:, min_y2:diff_y_2, max_z1:] = final_labels_spl_2_[0:right_lung_buffer.shape[0], 0:right_lung_buffer.shape[1], 0:right_lung_buffer.shape[2]]
+    elif case_r == 3:
+        total_labels[min_x2:diff_x_2, min_y2:, max_z1:] = final_labels_spl_2_[0:right_lung_buffer.shape[0], 0:right_lung_buffer.shape[1], 0:right_lung_buffer.shape[2]]
+    elif case_r == 4:
+        total_labels[min_x2:diff_x_2, min_y2:diff_y_2, max_z1:] = final_labels_spl_2_[0:right_lung_buffer.shape[0], 0:right_lung_buffer.shape[1], 0:right_lung_buffer.shape[2]]
+
+
+    # both labels and data are in spl here:
+
+    # convert them to ras
+    # convert final lung two to ras
+    total_lung = np.transpose(total_lung)
+    total_lung = np.flip(total_lung, axis=0)
+    total_lung = np.flip(total_lung, axis=1)
+    total_labels = np.transpose(total_labels)
+    total_labels = np.flip(total_labels, axis=0)
+    total_labels = np.flip(total_labels, axis=1)
+
+    multiple_clip_overlay_with_mask_from_npy(total_lung, total_labels, "Tlungc.png",
                                               clip_plane="coronal", img_vrange=(-1000, 0))
 
+    multiple_clip_overlay_with_mask_from_npy(total_lung, total_labels, "Tlunga.png",
+                                              clip_plane="axial", img_vrange=(-1000, 0))
 
-
-
-    #
+    multiple_clip_overlay_with_mask_from_npy(total_lung, total_labels, "Tlungs.png",
+                                              clip_plane="sagittal", img_vrange=(-1000, 0))
     # print("checkpoint")
     #
     # # multiple_clip_overlay_with_mask_from_npy(input_data_spl[0], left_lung, "leftlung.png",
